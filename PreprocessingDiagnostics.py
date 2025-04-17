@@ -10,25 +10,19 @@ for file in csv_files:
     file_path = os.path.join(data_path, file)
     df = pd.read_csv(file_path)
 
-    # Try to find Adj Close column
-    adj_close_col = next((col for col in df.columns if 'Adj Close' in col or 'Adj' in col), None)
+    adj_close = df["Adj Close"]
 
-    # Parse date
-    if 'Date' not in df.columns:
-        df.rename(columns={df.columns[0]: 'Date'}, inplace=True)
+    Date=df['Date']
 
-    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+    Date = pd.to_datetime(Date, errors='coerce')
 
     # Check and print diagnostics
     print(f"--- {file} ---")
     print(f"Shape: {df.shape}")
-    print(f"NaNs in Date: {df['Date'].isna().sum()}")
+    print(f"NaNs in Date: {Date.isna().sum()}")
 
-    if adj_close_col:
-        df[adj_close_col] = pd.to_numeric(df[adj_close_col], errors='coerce')
-        print(f"NaNs in '{adj_close_col}': {df[adj_close_col].isna().sum()}")
-    else:
-        print("⚠️ No 'Adj Close' column found.")
+    print(f"NaNs in 'adj_close': {adj_close.isna().sum()}")
+
     
     print()
 
