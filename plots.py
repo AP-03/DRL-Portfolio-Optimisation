@@ -2,13 +2,23 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import matplotlib.cm as cm
 import os
 
-data_path = "./data"
-csv_files = [f for f in os.listdir(data_path) if f.endswith('.csv')]
-
-dfs = {}
+# Color map per sector (customized or from matplotlib colormap)
+fixed_color_map = {
+    'GSPC': 'red',
+    'SP500-15': 'green',                   # Materials
+    'SP500-20': 'violet',                  # Industrials
+    'SP500-25': 'deepskyblue',             # Consumer Discretionary
+    'SP500-30': 'limegreen',               # Consumer Staples
+    'SP500-35': 'orange',                  # Health Care
+    'SP500-40': 'pink',                    # Financials
+    'SP500-45': 'brown',                   # Info Tech
+    'SP500-50': 'cyan',                    # Comm Services
+    'SP500-55': 'mediumpurple',            # Utilities
+    'SP500-60': 'gray',                    # Real Estate
+    'GSPE': 'darkgoldenrod'               # Energy (approx for SP500-10)
+}
 
 ticker_name_map = {
     'GSPC': 'S&P 500',
@@ -25,16 +35,15 @@ ticker_name_map = {
     'GSPE': 'Energy'
 }
 
-
-# Pick a clean color palette
-tickers_to_plot = [file.replace('.csv', '').replace('^', '') for file in csv_files if file.replace('.csv', '').replace('^', '') != 'VIX']
-colors = cm.get_cmap('tab20', len(tickers_to_plot))
+# Set up
+data_path = "./data"
+csv_files = [f for f in os.listdir(data_path) if f.endswith('.csv')]
 
 plt.figure(figsize=(15, 8))
 
-for idx, file in enumerate(csv_files):
+# Plot loop
+for file in csv_files:
     ticker = file.replace('.csv', '').replace('^', '')
-
     if ticker == 'VIX':
         continue
 
@@ -44,22 +53,24 @@ for idx, file in enumerate(csv_files):
     df.dropna(subset=['Date'], inplace=True)
 
     adj_close_cols = [col for col in df.columns if 'Adj Close' in col or 'Adj' in col]
-
     if adj_close_cols:
         adj_close = pd.to_numeric(df[adj_close_cols[0]], errors='coerce')
         df = df.loc[adj_close.notna()].copy()
-        adj_close = adj_close.loc[adj_close.notna()]
 
         cumulative_return = adj_close / adj_close.iloc[0]
+        plt.plot(
+            df['Date'],
+            cumulative_return,
+            label=ticker_name_map.get(ticker, ticker),
+            color=fixed_color_map.get(ticker, 'black')  # default to black if not found
+        )
 
-        plt.plot(df['Date'], cumulative_return, label=ticker_name_map.get(ticker, ticker), color=colors(idx))
-
+# Final touches
 plt.title('S&P500 and 11 Subsectors: 2006 - 2021', fontsize=16)
 plt.xlabel('Date')
 plt.ylabel('Cumulative Return', fontsize=14)
 plt.legend(fontsize=10)
 plt.grid(True)
-
 plt.gca().xaxis.set_major_locator(mdates.YearLocator())
 plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
 plt.xticks(rotation=45)
