@@ -50,15 +50,15 @@ class JPMDataPreprocessor:
 
 
 # Example Usage:
-# data = {
-#     'SP500': pd.read_csv('SP500.csv'),
-#     'VIX': pd.read_csv('VIX.csv'),
-#     'XLF': pd.read_csv('XLF.csv'),
-#     ... other ETFs
-# }
+data = {
+     'SP500': pd.read_csv('SP500.csv'),
+     'VIX': pd.read_csv('VIX.csv'),
+     'XLF': pd.read_csv('XLF.csv'),
+     ... other ETFs
+ }
 
-# preprocessor = JPMDataPreprocessor(data)
-# returns, features = preprocessor.compute_features()
+preprocessor = JPMDataPreprocessor(data)
+returns, features = preprocessor.compute_features()
 
 # returns -> dictionary of log returns per asset
 # features -> DataFrame with vol20_std, vol_ratio_std, vix_std

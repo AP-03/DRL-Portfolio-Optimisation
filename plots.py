@@ -11,19 +11,20 @@ csv_files = [f for f in os.listdir(data_path) if f.endswith('.csv')]
 dfs = {}
 
 ticker_name_map = {
-    'GSPC': 'SP500',
-    'XLB': 'Materials',
-    'XLI': 'Industrials',
-    'XLY': 'Consumer Discretionary',
-    'XLP': 'Consumer Staples',
-    'XLV': 'Health Care',
-    'XLF': 'Financials',
-    'XLK': 'Information Technology',
-    'XLC': 'Telecommunication Services',
-    'XLU': 'Utilities',
-    'XLRE': 'Real Estate',
-    'XLE': 'Energy'
+    'GSPC': 'S&P 500',
+    'SP500-15': 'Materials',
+    'SP500-20': 'Industrials',
+    'SP500-25': 'Consumer Discretionary',
+    'SP500-30': 'Consumer Staples',
+    'SP500-35': 'Health Care',
+    'SP500-40': 'Financials',
+    'SP500-45': 'Information Technology',
+    'SP500-50': 'Communication Services',
+    'SP500-55': 'Utilities',
+    'SP500-60': 'Real Estate',
+    'GSPE': 'Energy'
 }
+
 
 # Pick a clean color palette
 tickers_to_plot = [file.replace('.csv', '').replace('^', '') for file in csv_files if file.replace('.csv', '').replace('^', '') != 'VIX']
