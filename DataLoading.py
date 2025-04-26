@@ -3,9 +3,9 @@ import yfinance as yf
 import os
 
 tickers = ['^GSPC', '^SP500-50', '^SP500-25', '^SP500-30', '^GSPE', '^SP500-40', 
-           '^SP500-35', '^SP500-20', '^SP500-45', '^SP500-15', '^SP500-60', '^SP500-55', 'VIX']
+           '^SP500-35', '^SP500-20', '^SP500-45', '^SP500-15', '^SP500-60', '^SP500-55', '^VIX']
 
-start_date = '2006-01-01'
+start_date = '2005-09-01'
 end_date = '2021-12-31'
 
 save_path = './data'  # folder to save csvs
