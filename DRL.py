@@ -1,7 +1,7 @@
 import pandas as pd
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
-from PortfolioEnv import PortfolioEnv
+from portfolioEnv import PortfolioEnv
 
 
 # === Load preprocessed data ===
