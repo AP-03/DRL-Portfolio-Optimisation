@@ -10,6 +10,11 @@ class PortfolioEnv(gym.Env):
         self.features_df = features_df
         self.returns_df = returns_df
         self.initial_cash = initial_cash
+        start_date = pd.Timestamp('2006-01-01')
+
+        features_df = features_df.loc[features_df.index >= start_date]
+        returns_df = returns_df.loc[returns_df.index >= start_date]
+
         
         self.current_step = 0
         
