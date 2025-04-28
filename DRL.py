@@ -2,6 +2,7 @@ import pandas as pd
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from portfolioEnv import PortfolioEnv
+import torch
 
 # === Create environment ===
 def make_env():
@@ -9,12 +10,19 @@ def make_env():
         return PortfolioEnv(features_df, returns_df)
     return _init
 
+
 if __name__ == "__main__":
     features_df = pd.read_csv('./data/features_df.csv', index_col='Date', parse_dates=True)
     returns_df = pd.read_csv('./data/returns_df.csv', index_col='Date', parse_dates=True)
 
     n_envs = 10
     env = SubprocVecEnv([make_env() for _ in range(n_envs)])
+
+    policy_kwargs = dict(
+    activation_fn=torch.nn.Tanh,
+    net_arch=[dict(pi=[64, 64], vf=[64, 64])],  # pi=policy network, vf=value network
+    log_std_init=-1
+    )
 
     # === Create PPO model ===
     model = PPO(
@@ -26,11 +34,12 @@ if __name__ == "__main__":
         batch_size=64,         # Minibatch size for SGD
         ent_coef=0.0,          # Entropy coefficient (exploration vs exploitation)
         gamma=0.99,            # Discount factor
-        clip_range=0.2         # Clipping range for PPO stability
+        clip_range=0.2,         # Clipping range for PPO stability
+        policy_kwargs=policy_kwargs
     )
 
     # === Train PPO ===
-    total_timesteps = 500_000   # 500K steps (adjust depending on your compute)
+    total_timesteps = 7_500_000   # 500K steps (adjust depending on your compute)
     model.learn(total_timesteps=total_timesteps)
 
     # === Save model ===
