@@ -29,6 +29,7 @@ if __name__ == "__main__":
         policy="MlpPolicy",    # Use Multi-Layer Perceptron policy
         env=env,
         verbose=1,             # Print training info
+        tensorboard_log="./ppo_logs/",
         learning_rate=3e-4,    # Standard PPO learning rate
         n_steps=2048 // n_envs,          # Number of steps to collect before each policy update
         batch_size=64,         # Minibatch size for SGD
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     )
 
     # === Train PPO ===
-    total_timesteps = 7_500_000   # 500K steps (adjust depending on your compute)
+    total_timesteps = 500_000
     model.learn(total_timesteps=total_timesteps)
 
     # === Save model ===
