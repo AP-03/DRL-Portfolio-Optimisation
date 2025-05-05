@@ -25,8 +25,9 @@ weights_list = []
 
 for _ in range(len(features_df) - 1):
     action, _ = model.predict(obs, deterministic=True)
-    obs, reward, done, info = env.step(action)
-    new_value = portfolio_values[-1] * np.exp(reward[0])
+    obs, Dt, done, info = env.step(action)          # keep the reward in Dt
+    log_r = info[0]["raw_log_return"]                  # <- real daily log-return
+    new_value = portfolio_values[-1] * np.exp(log_r)
     portfolio_values.append(new_value)
 
     # Record the action (portfolio weight)

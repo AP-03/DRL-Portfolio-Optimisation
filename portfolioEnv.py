@@ -1,55 +1,121 @@
+# portfolioEnv.py
 import gym
 from gym import spaces
 import numpy as np
 import pandas as pd
+from collections import deque
+
+# ─────────────────────────────────────────────────────────
+# 1.  Differential Sharpe with full numeric guards
+# ─────────────────────────────────────────────────────────
+class DifferentialSharpeReward:
+    def __init__(self, eta: float = 1 / 252, clip: float = 50.0, eps: float = 1e-12):
+        self.eta, self.clip, self.eps = eta, clip, eps
+        self.reset()
+
+    def reset(self):
+        self.A = 0.0   # EMA of returns
+        self.B = 0.0   # EMA of squared returns
+
+    def _finite(self, x: float) -> float:
+        """Replace nan / inf with 0 (neutral)."""
+        return 0.0 if not np.isfinite(x) else x
+
+    def compute(self, Rt: float) -> float:
+        Rt = self._finite(Rt)
+
+        dA, dB = Rt - self.A, Rt**2 - self.B
+        var    = self.B - self.A**2         # sample variance estimate
+
+        # Guard-1: warm-up + tiny-negative round-off
+        if (not np.isfinite(var)) or var < self.eps:
+            Dt = 0.0
+        else:
+            Dt = (self.B * dA - 0.5 * self.A * dB) / np.power(var, 1.5)
+            Dt = np.clip(Dt, -self.clip, self.clip)  # Guard-2
+            Dt = self._finite(Dt)
+
+        # EMA updates
+        self.A += self.eta * dA
+        self.B += self.eta * dB
+        return float(Dt)
+
+
+# ─────────────────────────────────────────────────────────
+# 2.  Portfolio environment
+# ─────────────────────────────────────────────────────────
+LOOKBACK = 60        # days of return history
+REGIME_COLS = ["SP500_logret", "vol20", "vol_ratio", "VIX"]
 
 class PortfolioEnv(gym.Env):
-    def __init__(self, features_df, returns_df, initial_cash=1.0):
-        super(PortfolioEnv, self).__init__()
-        
-        self.features_df = features_df
-        self.returns_df = returns_df
-        self.initial_cash = initial_cash
-        start_date = pd.Timestamp('2006-01-01')
+    """
+    Observation  = [ 60×N log-return history | current weights w | 4 regime feats ]
+    Action       = raw vector in [0,1]^N  → softmax-like normalisation  (long-only)
+    Reward       = Differential Sharpe ratio of portfolio log return
+    """
 
-        features_df = features_df.loc[features_df.index >= start_date]
-        returns_df = returns_df.loc[returns_df.index >= start_date]
+    def __init__(self,
+                 features_df: pd.DataFrame,
+                 returns_df : pd.DataFrame):
+        super().__init__()
+        assert len(features_df) == len(returns_df)
 
-        
+        self.features_df = features_df.sort_index().reset_index(drop=True)
+        self.returns_df  = returns_df .sort_index().reset_index(drop=True)
+        self.n_assets    = returns_df.shape[1]
+
+        # --- action & observation spaces -------------------------------------
+        self.action_space = spaces.Box(low=0.0, high=1.0,
+                                       shape=(self.n_assets,), dtype=np.float32)
+
+        obs_len = (self.n_assets * LOOKBACK) + self.n_assets + len(REGIME_COLS)
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf,
+                                            shape=(obs_len,), dtype=np.float32)
+
+        # --- helpers ----------------------------------------------------------
+        self.ret_buffer   = deque(maxlen=LOOKBACK)
+        self.prev_weights = np.zeros(self.n_assets, dtype=np.float32)
+        self.diff_sharpe  = DifferentialSharpeReward()
         self.current_step = 0
-        
-        # Observation space: vector of features (normalized)
-        self.observation_space = spaces.Box(
-            low=-np.inf, high=np.inf, shape=(features_df.shape[1],), dtype=np.float32
-        )
-        
-        # Action space: Portfolio weights (bounded between 0 and 1 for each asset)
-        self.action_space = spaces.Box(
-            low=0, high=1, shape=(returns_df.shape[1],), dtype=np.float32
-        )
-        
+
+    # ───────── gym API ───────────────────────────────────────────────────────
     def reset(self):
         self.current_step = 0
-        return self._next_observation()
-    
+        self.diff_sharpe.reset()
+
+        self.ret_buffer.clear()
+        for _ in range(LOOKBACK):
+            self.ret_buffer.append(np.zeros(self.n_assets, dtype=np.float32))
+
+        self.prev_weights[:] = 0.0
+        return self._obs()
+
     def step(self, action):
-        # Normalize action to sum to 1 (portfolio weights)
-        action = action / (action.sum() + 1e-8)
-        
-        # Calculate portfolio return
-        portfolio_return = np.dot(self.returns_df.iloc[self.current_step].values, action)
-        
-        # Reward = daily portfolio log return
-        reward = portfolio_return
-        
+        # 1. convert raw action → long-only weights  Σw = 1
+        w = action / (action.sum() + 1e-8)
+
+        # 2. fetch today’s per-asset log-returns (already finite from preprocessing)
+        r_log = self.returns_df.iloc[self.current_step].values.astype(np.float32)
+
+        # 3. exact portfolio log-return  log(Σ w_i e^{r_i})
+        Rt = float(np.logaddexp.reduce(r_log + np.log(w + 1e-12)))
+
+        # 4. reward
+        reward = self.diff_sharpe.compute(Rt)
+
+        # 5. update history buffer & weights
+        self.ret_buffer.append(r_log)
+        self.prev_weights = w.astype(np.float32)
+
+        # 6. advance day
         self.current_step += 1
         done = self.current_step >= len(self.features_df) - 1
-        
-        next_obs = self._next_observation()
-        
-        info = {"step": self.current_step}
-        
-        return next_obs, reward, done, info
-    
-    def _next_observation(self):
-        return self.features_df.iloc[self.current_step].values.astype(np.float32)
+        return self._obs(), reward, done, {"raw_log_return": Rt, "weights": w}
+
+
+
+    # ───────── helpers ───────────────────────────────────────────────────────
+    def _obs(self):
+        hist   = np.concatenate(list(self.ret_buffer), dtype=np.float32)
+        regime = self.features_df.loc[self.current_step, REGIME_COLS].values.astype(np.float32)
+        return np.concatenate([hist, self.prev_weights, regime]).astype(np.float32)
