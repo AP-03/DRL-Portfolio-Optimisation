@@ -16,7 +16,7 @@ def make_env():
 env = DummyVecEnv([make_env])
 
 # === Load Trained Model ===
-model = PPO.load("./models/ppo_portfolio")
+model = PPO.load("./models/ppo_window_9_best")
 
 # === Simulate the Portfolio ===
 obs = env.reset()

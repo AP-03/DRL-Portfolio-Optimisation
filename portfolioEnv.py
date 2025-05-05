@@ -4,6 +4,8 @@ from gym import spaces
 import numpy as np
 import pandas as pd
 from collections import deque
+import random
+import torch
 
 # ─────────────────────────────────────────────────────────
 # 1.  Differential Sharpe with full numeric guards
@@ -79,7 +81,10 @@ class PortfolioEnv(gym.Env):
         self.current_step = 0
 
     # ───────── gym API ───────────────────────────────────────────────────────
-    def reset(self):
+    def reset(self, *, seed=None, options=None):
+        if seed is not None:
+            self.seed(seed)
+
         self.current_step = 0
         self.diff_sharpe.reset()
 
@@ -88,7 +93,14 @@ class PortfolioEnv(gym.Env):
             self.ret_buffer.append(np.zeros(self.n_assets, dtype=np.float32))
 
         self.prev_weights[:] = 0.0
-        return self._obs()
+        return self._obs(), {}
+
+    
+    def seed(self, seed=None):
+        np.random.seed(seed)
+        random.seed(seed)
+        torch.manual_seed(seed)
+        return [seed]
 
     def step(self, action):
         # 1. convert raw action → long-only weights  Σw = 1
@@ -106,11 +118,16 @@ class PortfolioEnv(gym.Env):
         # 5. update history buffer & weights
         self.ret_buffer.append(r_log)
         self.prev_weights = w.astype(np.float32)
-
-        # 6. advance day
         self.current_step += 1
+
         done = self.current_step >= len(self.features_df) - 1
-        return self._obs(), reward, done, {"raw_log_return": Rt, "weights": w}
+        terminated = done
+        truncated = False  # You can later add timeouts if needed
+
+        obs = self._obs()
+        info = {"raw_log_return": Rt, "weights": w}
+
+        return obs, reward, terminated, truncated, info
 
 
 

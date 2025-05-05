@@ -5,18 +5,26 @@ from portfolioEnv import PortfolioEnv
 import torch
 
 # === Create environment ===
-def make_env():
+def make_env(f_df, r_df):
     def _init():
-        return PortfolioEnv(features_df, returns_df)
+        return PortfolioEnv(f_df, r_df)
     return _init
+
 
 
 if __name__ == "__main__":
     features_df = pd.read_csv('./data/features_df.csv', index_col='Date', parse_dates=True)
     returns_df = pd.read_csv('./data/returns_df.csv', index_col='Date', parse_dates=True)
 
+    from utils import build_env_windows  # <- make sure the function we built earlier is here
+    env_windows = build_env_windows(features_df, returns_df)
+
+    # Pick the FIRST window for training
+    train_feats, train_rets = env_windows[0]["train"]
+
     n_envs = 10
-    env = VecNormalize(SubprocVecEnv([make_env() for _ in range(n_envs)]),norm_obs=False, norm_reward=True, clip_reward=10.0)
+    env_fns = [make_env(train_feats, train_rets) for _ in range(n_envs)]
+    env = VecNormalize(SubprocVecEnv(env_fns),norm_obs=False, norm_reward=True, clip_reward=10.0)
 
     policy_kwargs = dict(
     activation_fn=torch.nn.Tanh,
