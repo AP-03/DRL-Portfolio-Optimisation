@@ -1,6 +1,8 @@
 import pandas as pd
 import yfinance as yf
 import os
+import time
+from curl_cffi import requests
 
 tickers = ['^GSPC', '^SP500-50', '^SP500-25', '^SP500-30', '^GSPE', '^SP500-40', 
            '^SP500-35', '^SP500-20', '^SP500-45', '^SP500-15', '^SP500-60', '^SP500-55', '^VIX']
@@ -10,9 +12,10 @@ end_date = '2021-12-31'
 
 save_path = './data'  # folder to save csvs
 os.makedirs(save_path, exist_ok=True)
+session = requests.Session(impersonate="chrome")
 
 for ticker in tickers:
-    df = yf.download(ticker, start=start_date, end=end_date, auto_adjust=False)
+    df = yf.download(ticker, start=start_date, end=end_date, auto_adjust=False, session=session)
     
     # Reset index to move 'Date' from index to a column
     df.reset_index(inplace=True)
@@ -21,3 +24,5 @@ for ticker in tickers:
     df.to_csv(f'{save_path}/{ticker.replace("^", "")}.csv', index=False)
     
     print(f'Saved {ticker} to {save_path}/{ticker.replace("^", "")}.csv')
+    time.sleep(3)
+

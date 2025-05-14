@@ -16,28 +16,29 @@ def make_env():
 env = DummyVecEnv([make_env])
 
 # === Load Trained Model ===
-model = PPO.load("./models/ppo_window_9_best")
+model = PPO.load("./models/ppo_portfolio")
 
 # === Simulate the Portfolio ===
 obs = env.reset()
-portfolio_values = [10000.0]  # Start with 10K
+portfolio_values = [10000.0]  # Initial value
 weights_list = []
 
-for _ in range(len(features_df) - 1):
+for _ in range(len(features_df) - 2):
     action, _ = model.predict(obs, deterministic=True)
-    obs, Dt, done, info = env.step(action)          # keep the reward in Dt
-    log_r = info[0]["raw_log_return"]                  # <- real daily log-return
-    new_value = portfolio_values[-1] * np.exp(log_r)
-    portfolio_values.append(new_value)
+    obs, reward, done, info = env.step(action)
+    
+    # Get portfolio value from env info (which uses whole shares and prices)
+    portfolio_value = info[0]["portfolio_value"]
+    portfolio_values.append(portfolio_value)
+    
+    weights_list.append(info[0]["weights"])  # store actual weights used
 
-    # Record the action (portfolio weight)
-    weights_list.append(action.flatten())
 
 # === Create a Series for Analysis ===
-portfolio_series = pd.Series(portfolio_values, index=features_df.index)
+portfolio_series = pd.Series(portfolio_values, index=features_df.index[:-1])
 
 # === Create a DataFrame for Weights ===
-weights_df = pd.DataFrame(weights_list, index=features_df.index[:-1])  # align dimensions
+weights_df = pd.DataFrame(weights_list, index=features_df.index[:-2])  # align dimensions
 
 # === Run Full Performance Analysis ===
 analyze_performance(portfolio_series, weights=weights_df, title_prefix="PPO Training Data")

@@ -1,1 +1,1 @@
-.
+turnover = weights_df.diff().abs().sum(axis=1).mean()

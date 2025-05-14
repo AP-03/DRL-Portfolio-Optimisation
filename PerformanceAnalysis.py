@@ -19,6 +19,8 @@ def analyze_performance(portfolio_values, weights=None, title_prefix=""):
 
     # --- Calculate Daily Returns ---
     returns = portfolio_values.pct_change().dropna()
+    print(portfolio_values.tail(10))
+
 
     # --- Calculate Monthly Returns ---
     monthly_returns = returns.resample('ME').apply(lambda x: (1 + x).prod() - 1)
@@ -74,14 +76,14 @@ def analyze_performance(portfolio_values, weights=None, title_prefix=""):
     plt.show()
 
     # --- Sharpe Ratio and Max Drawdown (Overall) ---
-    sharpe_ratio = returns.mean() / returns.std() * np.sqrt(252)
+    sharpe_ratio = returns.mean() / returns.std() * np.sqrt(255)
     max_drawdown = (portfolio_values / portfolio_values.cummax() - 1).min()
 
     print("=== Performance Metrics ===")
     print(f"Sharpe Ratio     : {sharpe_ratio:.4f}")
     print(f"Max Drawdown     : {max_drawdown:.4f}")
-    print(f"Annualized Return: {((1 + returns.mean()) ** 252 - 1):.4f}")
-    print(f"Annual Volatility: {returns.std() * np.sqrt(252):.4f}")
+    print(f"Annualized Return: {((1 + returns.mean()) ** 255 - 1):.4f}")
+    print(f"Annual Volatility: {returns.std() * np.sqrt(255):.4f}")
 
     # --- Optional: Average Turnover ---
     if weights is not None:

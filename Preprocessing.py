@@ -28,19 +28,31 @@ for fname in SECTOR_FILES:
 
     # prefer 'Adj Close' if present, else first numeric column
     col = "Adj Close" if "Adj Close" in df.columns else df.columns[0]
-    series = pd.to_numeric(df[col], errors="coerce").ffill()   # <— forward-fill
+    series = pd.to_numeric(df[col], errors="coerce")
 
     price_frames[ticker] = series
 
+# 🛠️ Insert full business day index and forward-fill missing dates
+all_dates = pd.date_range(start='2005-09-01', end='2021-12-31', freq='B')  # Business days
+for ticker in price_frames:
+    price_frames[ticker] = price_frames[ticker].reindex(all_dates).ffill()
+
+# Combine into single DataFrame
 adj_close_df = pd.concat(price_frames.values(), axis=1)
 adj_close_df.columns = price_frames.keys()
 
-# drop rows only when **all** sector prices are NA  (market holiday)
+# drop rows only when **all** sector prices are NA  (e.g., holiday)
 adj_close_df = adj_close_df.dropna(how="all").sort_index()
+
 
 # daily log-returns
 log_returns = np.log(adj_close_df / adj_close_df.shift(1)).dropna()
 returns_df = log_returns.copy()
+
+price_df = adj_close_df.loc[log_returns.index].copy()
+# Don't rename columns — we keep them as original asset names
+
+
 
 # ————————————————————————————————————————
 # 3.  Market-regime features (SP-500 & VIX)
@@ -61,7 +73,7 @@ vix_adj = pd.to_numeric(vix["Adj Close"], errors="coerce").ffill()
 # ————————————————————————————————————————
 # 4.  Assemble features & leakage-safe standardisation
 # ————————————————————————————————————————
-features_df = log_returns.copy()
+features_df = pd.DataFrame(index=log_returns.index)
 features_df["SP500_logret"] = sp500_ret
 features_df["vol20"]        = vol20
 features_df["vol_ratio"]    = vol_ratio
@@ -74,15 +86,15 @@ for col in ["SP500_logret", "vol20", "vol_ratio", "VIX"]:
     features_df[col] = (features_df[col] - exp_mean) / exp_std
 
 # drop first 60 days (where vol60 is NaN) + align returns
+features_df = features_df.merge(price_df, left_index=True, right_index=True, how='left')
 features_df = features_df.dropna()
 returns_df  = returns_df.loc[features_df.index]
 
 # Example: trim everything before January 1, 2006
 EXPERIMENT_START_DATE = "2006-01-01"
 
-# Drop rows strictly before start date
-features_df = features_df[features_df.index >= EXPERIMENT_START_DATE].copy()
-returns_df  = returns_df [returns_df.index  >= EXPERIMENT_START_DATE].copy()
+features_df.index.name = "Date"
+returns_df.index.name = "Date"
 
 
 # ————————————————————————————————————————

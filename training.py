@@ -82,7 +82,7 @@ if __name__ == "__main__":
             if prev_best_model_path:
                 model.set_parameters(prev_best_model_path)
 
-            model.learn(total_timesteps=500_000)
+            model.learn(total_timesteps=7_500_000)
 
             # Validation env (unwrapped, no learning)
             val_env = DummyVecEnv([make_env(f_val, r_val)])

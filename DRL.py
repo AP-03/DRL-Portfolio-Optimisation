@@ -49,7 +49,7 @@ if __name__ == "__main__":
     )
 
     # === Train PPO ===
-    total_timesteps = 500_000
+    total_timesteps = 7_500_000
     model.learn(total_timesteps=total_timesteps)
 
     # === Save model ===
