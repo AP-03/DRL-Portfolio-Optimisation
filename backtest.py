@@ -24,6 +24,7 @@ def backtest():
     all_returns = []
     all_monthly = []
     annual_returns = []
+    all_portfolios = []
 
     for i, window in enumerate(env_windows):
         f_test, r_test = window['test']
@@ -57,6 +58,7 @@ def backtest():
 
         # Compute returns and metrics for aggregation
         daily_returns = portfolio_series.pct_change().dropna()
+        daily_returns_cum = pd.Series(np.diff(np.log(portfolio_values)), index=f_test.index[1:])
         monthly_returns = daily_returns.resample('ME').apply(lambda x: (1 + x).prod() - 1)
         annual_return = (1 + daily_returns.mean()) ** 252 - 1
         sharpe = ((daily_returns.mean()) / (daily_returns.std())* np.sqrt(252))
@@ -64,7 +66,7 @@ def backtest():
         turnover = weights_df.diff().abs().sum(axis=1).mean()
     #  print(f"Window {i}: Test dates from {f_test.index[0].date()} to {f_test.index[-1].date()} ({len(f_test)} days)")
 
-
+    
         all_returns.append(daily_returns)
         all_monthly.append(monthly_returns)
         annual_returns.append({
@@ -85,6 +87,12 @@ def backtest():
     combined_annual_percentage = annual_df.copy()
     combined_annual_percentage['return']=combined_annual_percentage['return'] * 100
 
+        # Combine and compound the log returns to get a continuous portfolio value
+    combined_returns = pd.concat(all_returns).sort_index()
+    cumulative_portfolio = 10000 * np.exp(combined_returns.cumsum())
+
+
     # === Save summary metrics for reuse ===
     annual_df.to_csv("./backtest_results/summary_metrics.csv", index=False)
-    return combined_monthly_percentage, combined_annual_percentage, annual_df
+
+    return combined_monthly_percentage, combined_annual_percentage, annual_df, cumulative_portfolio

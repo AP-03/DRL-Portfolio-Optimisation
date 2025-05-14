@@ -8,7 +8,7 @@ import seaborn as sns
 from backtest import backtest
 
 def results():
-    combined_monthly_percentage,combined_annual_percentage, annual_df = backtest()
+    combined_monthly_percentage,combined_annual_percentage, annual_df,cum_portfolio = backtest()
     # === Annual Return Bar Plot ===
     plt.figure(figsize=(10, 5))
     sns.barplot(x="year", y="return", data=combined_annual_percentage, color="skyblue")
@@ -20,6 +20,18 @@ def results():
     plt.legend()
     plt.tight_layout()
     plt.savefig("./backtest_results/combined_annual_returns.png")
+    plt.show()
+
+        # === Plot portfolio value over time ===
+    plt.figure(figsize=(12, 6))
+    plt.plot(cum_portfolio, label="Cumulative Portfolio Value")
+    plt.title("Portfolio Value Over Time")
+    plt.xlabel("Date")
+    plt.ylabel("Portfolio Value ($)")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.legend()
+    plt.savefig("./backtest_results/portfolio_value_over_time.png")
     plt.show()
 
     # === Monthly Heatmap ===
