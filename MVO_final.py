@@ -10,7 +10,7 @@ def run_mvo():
     # =========================
     # 1. Configuration
     # =========================
-    DATA_PATH    = "/Users/benjaminli/Code/MyTradingProjects/DRL_Portfolio_Optimisation/DRL-Portfolio-Optimisation/data"
+    DATA_PATH    = "./data"
 
     # Official backtest period start/end (results recorded from RESULT_START_DATE)
     RESULT_START_DATE = "2012-01-01"
@@ -350,4 +350,5 @@ def run_mvo():
     plt.tight_layout()
     plt.show()
     return combined_monthly, annual_df, portfolio_value, metrics
+
 
