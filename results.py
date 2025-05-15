@@ -9,6 +9,9 @@ from backtest import backtest
 
 def results():
     combined_monthly_percentage,combined_annual_percentage, annual_df,cum_portfolio = backtest()
+
+    pd.read_csv('./data/features_df.csv', index_col='Date', parse_dates=True)
+
     # === Annual Return Bar Plot ===
     plt.figure(figsize=(10, 5))
     sns.barplot(x="year", y="return", data=combined_annual_percentage, color="skyblue")
