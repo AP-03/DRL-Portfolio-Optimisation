@@ -8,6 +8,7 @@ from utils import build_env_windows
 from PerformanceAnalysis import analyze_performance
 import matplotlib.pyplot as plt
 import seaborn as sns
+from metrics import compute_metrics
 
 
 def backtest():
@@ -95,4 +96,4 @@ def backtest():
     # === Save summary metrics for reuse ===
     annual_df.to_csv("./backtest_results/summary_metrics.csv", index=False)
 
-    return combined_monthly_percentage, combined_annual_percentage, annual_df, cumulative_portfolio
+    return combined_monthly_percentage, combined_annual_percentage, annual_df, cumulative_portfolio, combined_returns

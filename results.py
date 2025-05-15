@@ -6,11 +6,23 @@ from PerformanceAnalysis import analyze_performance
 import matplotlib.pyplot as plt
 import seaborn as sns
 from backtest import backtest
+from metrics import compute_metrics
 
 def results():
-    combined_monthly_percentage,combined_annual_percentage, annual_df,cum_portfolio = backtest()
+    combined_monthly_percentage,combined_annual_percentage, annual_df,cum_portfolio,combined_returns = backtest()
 
-    pd.read_csv('./data/features_df.csv', index_col='Date', parse_dates=True)
+    drl_metrics = compute_metrics(combined_returns)
+
+    metrics_df = pd.DataFrame({
+    "Metric": drl_metrics.keys(),
+    "DRL": drl_metrics.values()
+   # "MVO": [mvo_metrics[k] for k in drl_metrics.keys()]
+    })
+
+    pd.set_option("display.float_format", "{:.4f}".format)
+    print(metrics_df)
+
+
 
     # === Annual Return Bar Plot ===
     plt.figure(figsize=(10, 5))
